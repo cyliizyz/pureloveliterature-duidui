@@ -117,7 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             welcomeScreen.classList.add('hidden');
             mainContent.classList.remove('hidden');
-            initializePhotoGallery();
+            initializeNavigation();
+            initializeReflection();
         }, 1000);
     });
 
@@ -329,5 +330,130 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getMemories() {
         return JSON.parse(localStorage.getItem('memories') || '[]');
+    }
+
+    // Section Navigation
+    function initializeNavigation() {
+        const navLinks = document.querySelectorAll('.nav-links a');
+        const sections = document.querySelectorAll('.section');
+        
+        // Hide all sections initially except the first one
+        sections.forEach((section, index) => {
+            if (index !== 0) section.style.display = 'none';
+        });
+
+        // Add click handlers to navigation links
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('data-section');
+                
+                // Hide all sections
+                sections.forEach(section => {
+                    section.style.display = 'none';
+                    section.classList.remove('active');
+                });
+                
+                // Show target section
+                const targetSection = document.getElementById(targetId);
+                targetSection.style.display = 'block';
+                
+                // Trigger animation
+                setTimeout(() => {
+                    targetSection.classList.add('active');
+                }, 50);
+                
+                // Update active nav link
+                navLinks.forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+                link.classList.add('active');
+                
+                // Initialize section-specific content if needed
+                if (targetId === 'photos') {
+                    initializePhotoGallery();
+                }
+            });
+        });
+    }
+
+    // Add reflection functionality
+    function initializeReflection() {
+        const addReflectionBtn = document.getElementById('addReflection');
+        if (addReflectionBtn) {
+            addReflectionBtn.addEventListener('click', addNewReflection);
+        }
+        loadReflections();
+    }
+
+    function addNewReflection() {
+        const textarea = document.getElementById('newReflection');
+        const dateInput = document.getElementById('reflectionDate');
+        const typeSelect = document.getElementById('reflectionType');
+        const content = textarea.value.trim();
+        const date = dateInput.value || new Date().toISOString().split('T')[0];
+        const type = typeSelect.value;
+
+        if (content) {
+            const reflection = {
+                id: Date.now(),
+                content,
+                date,
+                type,
+                timestamp: new Date().getTime()
+            };
+
+            const reflections = getReflections();
+            reflections.unshift(reflection);
+            localStorage.setItem('reflections', JSON.stringify(reflections));
+
+            addReflectionToDOM(reflection);
+
+            textarea.value = '';
+            dateInput.value = '';
+        }
+    }
+
+    function addReflectionToDOM(reflection) {
+        const container = document.getElementById('reflectionEntries');
+        const entry = document.createElement('div');
+        entry.className = `reflection-entry ${reflection.type}`;
+        entry.style.animation = 'slideIn 0.5s ease-out forwards';
+
+        const formattedDate = new Date(reflection.date).toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        const typeLabels = {
+            growth: '个人成长',
+            relationship: '感情思考',
+            future: '未来展望'
+        };
+
+        entry.innerHTML = `
+            <div class="reflection-header">
+                <span class="reflection-date">${formattedDate}</span>
+                <span class="reflection-type">${typeLabels[reflection.type]}</span>
+            </div>
+            <div class="reflection-content">${reflection.content}</div>
+        `;
+
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    function getReflections() {
+        return JSON.parse(localStorage.getItem('reflections') || '[]');
+    }
+
+    function loadReflections() {
+        const reflections = getReflections();
+        const container = document.getElementById('reflectionEntries');
+        
+        if (container) {
+            container.innerHTML = '';
+            reflections.forEach(reflection => addReflectionToDOM(reflection));
+        }
     }
 }); 
